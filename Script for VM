@@ -1,0 +1,47 @@
+New-AzVm `
+-ResourceGroupName 'Test-1' `
+-Name 'Test-VM' `
+-Location 'East US' `
+-VirtualNetworkName 'myVnet' `
+-SubnetName 'mySubnet' `
+-SecurityGroupName 'myNetworkSecurityGroup' `
+-PublicIpAddressName 'myPublicIpAddress' `
+-OpenPorts 80,3389
+
+
+--
+
+# Define variables
+$ResourceGroupName = "Test-1"
+$VMName = "TEST-VM"
+$CommandId = "RunPowerShellScript"
+$ScriptString = "Install-WindowsFeature -Name Web-Server -IncludeManagementTools"
+
+# Execute the command on the Azure VM
+Invoke-AzVMRunCommand -ResourceGroupName $ResourceGroupName `
+                      -VMName $VMName `
+                      -CommandId $CommandId `
+                      -ScriptString $ScriptString
+
+-_
+# Define variables
+$ResourceGroupName = "Test-1"                     # Name of the resource group where the VM is located
+$VMName = "TEST-VM"                               # Name of the Azure VM
+$CommandId = "RunPowerShellScript"                # Command type to run PowerShell scripts on the VM
+$ScriptString = "Install-WindowsFeature -Name Web-Server -IncludeManagementTools"  # PowerShell command to install IIS
+
+# Verify variables (optional step for debugging)
+Write-Host "Resource Group: $ResourceGroupName"
+Write-Host "VM Name: $VMName"
+Write-Host "Command ID: $CommandId"
+Write-Host "Script to Execute: $ScriptString"
+
+# Execute the command on the Azure VM
+Invoke-AzVMRunCommand -ResourceGroupName $ResourceGroupName `
+                      -VMName $VMName `
+                      -CommandId $CommandId `
+                      -ScriptString $ScriptString
+
+# Display success message
+Write-Host "Command executed. Check the Azure portal or logs for the result."
+
