@@ -1,0 +1,21 @@
+# Allow HTTP (Port 80) for Web Access
+az network nsg rule create \
+  -g mymachines \
+  --nsg-name mymachines-nsg \
+  -n AllowHTTP \
+  --priority 100 \
+  --destination-port-ranges 80 \
+  --direction Inbound \
+  --access Allow \
+  --protocol Tcp
+
+# Allow RDP (Port 3389) for Remote Access
+az network nsg rule create \
+  -g mymachines \
+  --nsg-name mymachines-nsg \
+  -n AllowRDP \
+  --priority 110 \
+  --destination-port-ranges 3389 \
+  --direction Inbound \
+  --access Allow \
+  --protocol Tcp
