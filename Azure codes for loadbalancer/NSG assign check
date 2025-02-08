@@ -1,0 +1,14 @@
+# Check If Your VM Has an NSG Assigned
+az network nic show \
+  -g mymachines \
+  -n testmachine246_z3 \
+  --query "networkSecurityGroup" --output table
+
+ # Create an NSG (If None Exists)
+az network nsg create -g mymachines -n mymachines-nsg --location eastus
+
+#attach
+az network nic update \
+  -g mymachines \
+  --name testmachine246_z3 \
+  --network-security-group mymachines-nsg
