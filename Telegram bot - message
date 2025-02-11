@@ -1,0 +1,73 @@
+param (
+    [string]$VMName = "testmachine",  
+    [string]$ResourceGroup = "mymachines",  
+    [int]$CpuThreshold = 5  # CPU threshold in %
+)
+
+# Connect to Azure using Managed Identity
+Connect-AzAccount -Identity
+
+# Construct the Metric Resource ID (update the subscription ID if necessary)
+$MetricResourceID = "/subscriptions/(SUBID)/resourceGroups/$ResourceGroup/providers/Microsoft.Compute/virtualMachines/$VMName"
+
+# Retrieve CPU metrics
+try {
+    $CpuMetric = Get-AzMetric -ResourceId $MetricResourceID `
+                              -MetricName "Percentage CPU" `
+                              -AggregationType Average `
+                              -TimeGrain 00:05:00 `
+                              -ErrorAction Stop
+} catch {
+    Write-Host "ERROR: Failed to retrieve CPU metrics - $_"
+    exit 1
+}
+
+# Check and extract CPU usage
+if ($CpuMetric -and $CpuMetric.Data -and $CpuMetric.Data.Count -gt 0) {
+    $CpuUsage = $CpuMetric.Data[-1].Average
+    Write-Host "DEBUG: CPU metric retrieved: ${CpuUsage}%"
+} else {
+    Write-Host "ERROR: No CPU metric data available!"
+    exit 1
+}
+
+# Log CPU usage
+Write-Host "CPU Usage for ${VMName}: ${CpuUsage}%. Threshold: ${CpuThreshold}%"
+
+# Define Telegram Bot parameters
+$botToken = "x"
+$chatId   = "y"
+
+# Restart the VM if CPU usage is above threshold
+if ($CpuUsage -gt $CpuThreshold) {
+    try {
+        Write-Host "Attempting to restart VM ${VMName}..."
+        Restart-AzVM -Name $VMName -ResourceGroupName $ResourceGroup -Confirm:$false
+        Write-Host "VM restart command executed successfully!"
+
+        # Build the Telegram message
+        $message = "The VM ${VMName} in resource group ${ResourceGroup} was restarted due to high CPU usage. (CPU: ${CpuUsage}%, Threshold: ${CpuThreshold}%)"
+        
+        # Construct the Telegram API URL for sending messages
+        $telegramUrl = "https://api.telegram.org/bot$botToken/sendMessage"
+        
+        # Create the message payload and convert to JSON
+        $payload = @{
+            chat_id = $chatId
+            text    = $message
+        }
+        $jsonPayload = $payload | ConvertTo-Json
+
+        # Send the POST request to the Telegram API
+        try {
+            $response = Invoke-RestMethod -Uri $telegramUrl -Method Post -ContentType "application/json" -Body $jsonPayload
+            Write-Host "Telegram message sent successfully!"
+        } catch {
+            Write-Host "ERROR: Failed to send Telegram message - $_"
+        }
+    } catch {
+        Write-Host "ERROR: Failed to restart VM - $_"
+    }
+} else {
+    Write-Host "CPU usage is below threshold. No restart performed."
+}
